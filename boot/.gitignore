@@ -1,0 +1,5 @@
+kernel*.img
+bootcode.bin
+start.elf
+fixup.dat
+bcm2836-rpi-2-b.dts

@@ -1,0 +1,16 @@
+# Run `make .clangd` to update
+CompileFlags:
+  Add:
+    - -xc
+    - -std=c99
+    - -fpic
+    - -ffreestanding
+    - -O2
+    - -Wall
+    - -Wextra
+    - -Wpedantic
+    - -Wno-char-subscripts
+    - -Wno-parentheses
+    - -Wimplicit-fallthrough
+    - -Werror=incompatible-pointer-types
+    - -Werror=enum-conversion

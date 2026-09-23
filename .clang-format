@@ -1,0 +1,22 @@
+AlignAfterOpenBracket: BlockIndent
+AlignArrayOfStructures: Left
+AlignConsecutiveDeclarations:
+  Enabled: true
+  AcrossComments: true
+  AlignFunctionPointers: true
+AlignConsecutiveMacros: AcrossComments
+AlignEscapedNewlines: LeftWithLastLine
+AlignOperands: DontAlign
+AllowShortBlocksOnASingleLine: Always
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: Empty
+BasedOnStyle: Google
+BreakAdjacentStringLiterals: false
+BreakBeforeBinaryOperators: NonAssignment
+ColumnLimit: 100
+Cpp11BracedListStyle: false
+IndentCaseLabels: false
+IndentWidth: 4
+PointerAlignment: Right
+RemoveBracesLLVM: true
+SpacesBeforeTrailingComments: 1
