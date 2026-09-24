@@ -32,6 +32,32 @@ void gpio_write(uint8_t pin, gpio_state_t state) {
     *(state ? gpset(pin) : gpclr(pin)) = 1 << gpsetclr_bit(pin);
 }
 
+static inline int spi_tx_ready(void) {
+    return *(volatile uint32_t *)SPI_BASE & (1 << 18);
+}
+
+static inline int spi_tx_done(void) {
+    return *(volatile uint32_t *)SPI_BASE & (1 << 16);
+}
+
+void spi_cdiv(uint16_t div) {
+    *(uint32_t *)(SPI_BASE + 0x8) = div;
+}
+
+void spi_tx_begin(void) {
+    *(uint32_t *)SPI_BASE |= (1 << 7);
+}
+
+void spi_tx_end(void) {
+    while (!spi_tx_done());
+    *(uint32_t *)SPI_BASE &= ~(1 << 7);
+}
+
+void spi_tx_write(uint8_t byte) {
+    while (!spi_tx_ready());
+    *(uint32_t *)(SPI_BASE + 0x4) = byte;
+}
+
 static inline uint64_t systime(void) {
     uint32_t lo = *(volatile uint32_t *)(SYSTIME_BASE + 0x4);
     uint32_t hi = *(volatile uint32_t *)(SYSTIME_BASE + 0x8);

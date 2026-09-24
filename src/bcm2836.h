@@ -17,6 +17,7 @@
 
 #define MMIO_BASE    0x3F000000
 #define GPIO_BASE    (MMIO_BASE + 0x200000)
+#define SPI_BASE     (MMIO_BASE + 0x204000)
 #define SYSTIME_BASE (MMIO_BASE + 0x3000)
 #define SYSTIME_TPS  1000000
 
@@ -24,6 +25,12 @@ typedef enum {
     GPIO_FSEL_CLEAR = 0x7,
     GPIO_INPUT      = 0x0,
     GPIO_OUTPUT     = 0x1,
+    GPIO_ALT0       = 0x4,
+    GPIO_ALT1       = 0x5,
+    GPIO_ALT2       = 0x6,
+    GPIO_ALT3       = 0x7,
+    GPIO_ALT4       = 0x3,
+    GPIO_ALT5       = 0x2,
 } gpio_fsel_t;
 
 typedef enum {
@@ -33,6 +40,11 @@ typedef enum {
 
 void gpio_fsel(uint8_t pin, gpio_fsel_t mode);
 void gpio_write(uint8_t pin, gpio_state_t state);
+
+void spi_cdiv(uint16_t div);
+void spi_tx_begin(void);
+void spi_tx_end(void);
+void spi_tx_write(uint8_t byte);
 
 void sleep_ms(uint32_t ms);
 
