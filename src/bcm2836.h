@@ -12,10 +12,13 @@
  * Resources:
  *   https://github.com/raspberrypi/documentation/blob/f519769a2f246315ad3cf36250d9918e56083769/hardware/raspberrypi/peripheral_addresses.md
  *   https://pip-assets.raspberrypi.com/categories/579-raspberry-pi-zero/documents/RP-008249-DS-1-bcm2835-peripherals.pdf
+ *   https://wiki.osdev.org/BCM_System_Timer
  */
 
-#define PERIPHERAL_BASE 0x3F000000
-#define GPIO_BASE       (PERIPHERAL_BASE + 0x200000)
+#define MMIO_BASE    0x3F000000
+#define GPIO_BASE    (MMIO_BASE + 0x200000)
+#define SYSTIME_BASE (MMIO_BASE + 0x3000)
+#define SYSTIME_TPS  1000000
 
 typedef enum {
     GPIO_FSEL_CLEAR = 0x7,
@@ -30,5 +33,7 @@ typedef enum {
 
 void gpio_fsel(uint8_t pin, gpio_fsel_t mode);
 void gpio_write(uint8_t pin, gpio_state_t state);
+
+void sleep_ms(uint32_t ms);
 
 #endif // _BCM2836_H

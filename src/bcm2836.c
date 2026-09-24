@@ -31,3 +31,16 @@ void gpio_fsel(uint8_t pin, gpio_fsel_t mode) {
 void gpio_write(uint8_t pin, gpio_state_t state) {
     *(state ? gpset(pin) : gpclr(pin)) = 1 << gpsetclr_bit(pin);
 }
+
+static inline uint64_t systime(void) {
+    uint32_t lo = *(volatile uint32_t *)(SYSTIME_BASE + 0x4);
+    uint32_t hi = *(volatile uint32_t *)(SYSTIME_BASE + 0x8);
+
+    return ((uint64_t)hi << 32) | lo;
+}
+
+void sleep_ms(uint32_t ms) {
+    uint64_t end = systime() + ms * SYSTIME_TPS / 1000;
+
+    while (systime() < end);
+}
