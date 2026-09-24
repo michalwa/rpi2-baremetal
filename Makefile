@@ -22,6 +22,7 @@ CFLAGS = \
 	-Wpedantic \
 	-Wno-char-subscripts \
 	-Wno-parentheses \
+	-Wno-int-to-pointer-cast \
 	-Wimplicit-fallthrough \
 	-Werror=incompatible-pointer-types \
 	-Werror=enum-conversion
@@ -66,6 +67,14 @@ $(KERNEL_ELF): $(KERNEL_LD) $(OBJ_FILES)
 
 $(KERNEL_BIN): $(KERNEL_ELF)
 	$(TOOLCHAIN_PREFIX)objcopy $< -O binary $@
+
+.PHONY: format
+format:
+	clang-format -i $(C_FILES)
+
+.PHONY: format-check
+format-check:
+	clang-format --dry-run -Werror $(C_FILES)
 
 .clangd: Makefile
 	@echo "# Run \`make .clangd\` to update" > $@

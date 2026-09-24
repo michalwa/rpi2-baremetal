@@ -11,6 +11,7 @@ CompileFlags:
     - -Wpedantic
     - -Wno-char-subscripts
     - -Wno-parentheses
+    - -Wno-int-to-pointer-cast
     - -Wimplicit-fallthrough
     - -Werror=incompatible-pointer-types
     - -Werror=enum-conversion

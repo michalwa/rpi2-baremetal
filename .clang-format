@@ -1,5 +1,8 @@
 AlignAfterOpenBracket: BlockIndent
 AlignArrayOfStructures: Left
+AlignConsecutiveAssignments:
+  Enabled: true
+  AcrossComments: true
 AlignConsecutiveDeclarations:
   Enabled: true
   AcrossComments: true
