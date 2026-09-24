@@ -2,17 +2,46 @@
 
 #include "bcm2836.h"
 
-typedef enum {
-    WS35C_COMMAND = GPIO_LOW,
-    WS35C_DATA    = GPIO_HIGH,
-} ws35c_rs_t;
+/*
+ * The display supposedly uses the ILI9486 controller. This is not
+ * officially documented anywhere.
+ *
+ * Datasheet:
+ *   https://www.lcdwiki.com/res/MAR3501/datasheet_ILI9486.pdf
+ *
+ * Community sources:
+ *   https://github.com/notro/fbtft/blob/master/fb_ili9486.c
+ *   https://github.com/Bodmer/TFT_eSPI/blob/master/TFT_Drivers/ILI9486_Init.h
+ *   https://github.com/sonicpp/ili9486
+ *
+ *   https://github.com/swkim01/waveshare-dtoverlays/blob/4b5fcbd3aaeaec2d1089bd6cb083db9984f13ea2/waveshare35c.dts#L67-L81
+ */
 
-static void ws35c_write(ws35c_rs_t rs, uint8_t value) {
-    gpio_write(WS35C_LCD_RS_PIN, (gpio_state_t)rs);
-
+static inline void data_begin(void) {
+    gpio_write(WS35C_LCD_RS_PIN, GPIO_HIGH);
     spi_tx_begin();
-    spi_tx_write(value);
+}
+
+static inline void data_end(void) {
     spi_tx_end();
+}
+
+static inline void command(uint8_t cmd) {
+    gpio_write(WS35C_LCD_RS_PIN, GPIO_LOW);
+    spi_tx_begin();
+    spi_tx_write(cmd);
+    spi_tx_end();
+}
+
+static inline void command1(uint8_t cmd, uint8_t arg) {
+    gpio_write(WS35C_LCD_RS_PIN, GPIO_LOW);
+    spi_tx_begin();
+    spi_tx_write(cmd);
+    spi_tx_end();
+
+    data_begin();
+    spi_tx_write(arg);
+    data_end();
 }
 
 void ws35c_init(void) {
@@ -23,90 +52,130 @@ void ws35c_init(void) {
     gpio_fsel(WS35C_SCLK_PIN, GPIO_ALT0);   // SPI0_SCLK
 
     // The BCM2836 core clock runs at 250Mhz by default, we want at most 125Mhz
-    spi_cdiv(2);
+    spi_cdiv(16); // TODO: try different values
 
-    /*
-     * The display supposedly uses the ILI9486 controller. This is not
-     * officially documented anywhere.
-     *
-     * Datasheet:
-     *   https://www.lcdwiki.com/res/MAR3501/datasheet_ILI9486.pdf
-     *
-     * Community sources:
-     *   https://github.com/notro/fbtft/blob/master/fb_ili9486.c
-     *   https://github.com/Bodmer/TFT_eSPI/blob/master/TFT_Drivers/ILI9486_Init.h
-     *   https://github.com/sonicpp/ili9486
-     */
+    // SPI control register should be safe to leave at default 0
+    // (CPOL = 0, CPHA = 0, etc.)
 
-    ws35c_write(WS35C_COMMAND, 0xB0); // interface mode control
-    ws35c_write(WS35C_DATA, 0x00);    // it takes some flags, just clear them
+    command1(0xB0, 0x00); // interface mode control: it takes some flags, just clear them
+    command(0x11);        // sleep OUT
+    sleep_ms(250);        // wait while the controller does a self-diagnostic check
+    command1(0x3A, 0x55); // interface pixel format: 16 bits per pixel
+    command1(0xC2, 0x44); // power control 3: set step-up cycles to 2H and 8H (no idea)
 
-    ws35c_write(WS35C_COMMAND, 0x11); // sleep OUT
-    sleep_ms(250);                    // wait while the controller does a self-diagnostic check
+    command(0xC5); // VCOM control 1
+    data_begin();
+    {
+        spi_tx_write(0x00);
+        spi_tx_write(0x00);
+        spi_tx_write(0x00);
+        spi_tx_write(0x00);
+    }
+    data_end();
 
-    ws35c_write(WS35C_COMMAND, 0x3A); // interface pixel format
-    ws35c_write(WS35C_DATA, 0x55);    // 16 bits per pixel
+    command(0xE0); // Positive Gamma Control
+    data_begin();
+    {
+        spi_tx_write(0x0F); // these configure some voltages
+        spi_tx_write(0x1F);
+        spi_tx_write(0x1C);
+        spi_tx_write(0x0C);
+        spi_tx_write(0x0F);
+        spi_tx_write(0x08);
+        spi_tx_write(0x48);
+        spi_tx_write(0x98);
+        spi_tx_write(0x37);
+        spi_tx_write(0x0A);
+        spi_tx_write(0x13);
+        spi_tx_write(0x04);
+        spi_tx_write(0x11);
+        spi_tx_write(0x0D);
+        spi_tx_write(0x00);
+    }
+    data_end();
 
-    ws35c_write(WS35C_COMMAND, 0xC2); // power control 3
-    ws35c_write(WS35C_DATA, 0x44);    // set step-up cycles to 2H and 8H (no idea)
+    command(0xE1); // Negative Gamma Correction
+    data_begin();
+    {
+        spi_tx_write(0x0F);
+        spi_tx_write(0x32);
+        spi_tx_write(0x2E);
+        spi_tx_write(0x0B);
+        spi_tx_write(0x0D);
+        spi_tx_write(0x05);
+        spi_tx_write(0x47);
+        spi_tx_write(0x75);
+        spi_tx_write(0x37);
+        spi_tx_write(0x06);
+        spi_tx_write(0x10);
+        spi_tx_write(0x03);
+        spi_tx_write(0x24);
+        spi_tx_write(0x20);
+        spi_tx_write(0x00);
+    }
+    data_end();
 
-    ws35c_write(WS35C_COMMAND, 0xC5); // VCOM control 1
-    ws35c_write(WS35C_DATA, 0x00);
-    ws35c_write(WS35C_DATA, 0x00);
-    ws35c_write(WS35C_DATA, 0x00);
-    ws35c_write(WS35C_DATA, 0x00);
+    command(0xE2); // Digital Gamma Control 1
+    data_begin();
+    {
+        spi_tx_write(0x0F);
+        spi_tx_write(0x32);
+        spi_tx_write(0x2E);
+        spi_tx_write(0x0B);
+        spi_tx_write(0x0D);
+        spi_tx_write(0x05);
+        spi_tx_write(0x47);
+        spi_tx_write(0x75);
+        spi_tx_write(0x37);
+        spi_tx_write(0x06);
+        spi_tx_write(0x10);
+        spi_tx_write(0x03);
+        spi_tx_write(0x24);
+        spi_tx_write(0x20);
+        spi_tx_write(0x00);
+    }
+    data_end();
 
-    ws35c_write(WS35C_COMMAND, 0xE0); // Positive Gamma Control
-    ws35c_write(WS35C_DATA, 0x0F);    // these values configure voltages
-    ws35c_write(WS35C_DATA, 0x1F);
-    ws35c_write(WS35C_DATA, 0x1C);
-    ws35c_write(WS35C_DATA, 0x0C);
-    ws35c_write(WS35C_DATA, 0x0F);
-    ws35c_write(WS35C_DATA, 0x08);
-    ws35c_write(WS35C_DATA, 0x48);
-    ws35c_write(WS35C_DATA, 0x98);
-    ws35c_write(WS35C_DATA, 0x37);
-    ws35c_write(WS35C_DATA, 0x0A);
-    ws35c_write(WS35C_DATA, 0x13);
-    ws35c_write(WS35C_DATA, 0x04);
-    ws35c_write(WS35C_DATA, 0x11);
-    ws35c_write(WS35C_DATA, 0x0D);
-    ws35c_write(WS35C_DATA, 0x00);
+    command(0x11); // sleep OUT
+    command(0x29); // display ON
+}
 
-    ws35c_write(WS35C_COMMAND, 0xE1); // Negative Gamma Correction
-    ws35c_write(WS35C_DATA, 0x0F);
-    ws35c_write(WS35C_DATA, 0x32);
-    ws35c_write(WS35C_DATA, 0x2E);
-    ws35c_write(WS35C_DATA, 0x0B);
-    ws35c_write(WS35C_DATA, 0x0D);
-    ws35c_write(WS35C_DATA, 0x05);
-    ws35c_write(WS35C_DATA, 0x47);
-    ws35c_write(WS35C_DATA, 0x75);
-    ws35c_write(WS35C_DATA, 0x37);
-    ws35c_write(WS35C_DATA, 0x06);
-    ws35c_write(WS35C_DATA, 0x10);
-    ws35c_write(WS35C_DATA, 0x03);
-    ws35c_write(WS35C_DATA, 0x24);
-    ws35c_write(WS35C_DATA, 0x20);
-    ws35c_write(WS35C_DATA, 0x00);
+void ws35c_fill(
+    uint16_t col_start, uint16_t col_end, uint16_t page_start, uint16_t page_end, uint16_t rgb
+) {
+    command(0x2A); // Column Address Set
+    data_begin();
+    {
+        spi_tx_write(col_start >> 8);
+        spi_tx_write(col_start & 0xFF);
+        spi_tx_write(col_end >> 8);
+        spi_tx_write(col_end & 0xFF);
+    }
+    data_end();
 
-    ws35c_write(WS35C_COMMAND, 0xE2); // Digital Gamma Control 1
-    ws35c_write(WS35C_DATA, 0x0F);
-    ws35c_write(WS35C_DATA, 0x32);
-    ws35c_write(WS35C_DATA, 0x2E);
-    ws35c_write(WS35C_DATA, 0x0B);
-    ws35c_write(WS35C_DATA, 0x0D);
-    ws35c_write(WS35C_DATA, 0x05);
-    ws35c_write(WS35C_DATA, 0x47);
-    ws35c_write(WS35C_DATA, 0x75);
-    ws35c_write(WS35C_DATA, 0x37);
-    ws35c_write(WS35C_DATA, 0x06);
-    ws35c_write(WS35C_DATA, 0x10);
-    ws35c_write(WS35C_DATA, 0x03);
-    ws35c_write(WS35C_DATA, 0x24);
-    ws35c_write(WS35C_DATA, 0x20);
-    ws35c_write(WS35C_DATA, 0x00);
+    command(0x2B); // Page Address Set
+    data_begin();
+    {
+        spi_tx_write(page_start >> 8);
+        spi_tx_write(page_start & 0xFF);
+        spi_tx_write(page_end >> 8);
+        spi_tx_write(page_end & 0xFF);
+    }
+    data_end();
 
-    ws35c_write(WS35C_COMMAND, 0x11); // sleep OUT
-    ws35c_write(WS35C_COMMAND, 0x29); // display ON
+    uint32_t size = ((uint32_t)col_end - col_start + 1) * (page_end - page_start + 1);
+
+    command(0x2C); // Memory Write
+    data_begin();
+    {
+        for (uint32_t i = 0; i < size; i++) {
+            spi_tx_write(rgb >> 8);
+            spi_tx_write(rgb & 0xFF);
+        }
+    }
+    data_end();
+}
+
+inline uint16_t rgb565(uint8_t r, uint8_t g, uint8_t b) {
+    return ((r & 0x1F) << 11) | ((g & 0x3F) << 5) | (b & 0x1F);
 }

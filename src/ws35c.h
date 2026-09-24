@@ -1,6 +1,8 @@
 #ifndef _WS35C_H
 #define _WS35C_H
 
+#include <stdint.h>
+
 #include "rpi2b1p1.h"
 
 /*
@@ -15,7 +17,16 @@
 #define WS35C_LCD_CS_PIN RPI_GPIO_24
 #define WS35C_MOSI_PIN   RPI_GPIO_19
 #define WS35C_SCLK_PIN   RPI_GPIO_23
+#define WS35C_RESET_PIN  RPI_GPIO_22
+
+#define WS35C_COL_MAX  0x1DF
+#define WS35C_PAGE_MAX 0x13F
 
 void ws35c_init(void);
+void ws35c_fill(
+    uint16_t col_start, uint16_t col_end, uint16_t page_start, uint16_t page_end, uint16_t rgb
+);
+
+uint16_t rgb565(uint8_t r, uint8_t g, uint8_t b);
 
 #endif // _WS35C_H

@@ -1,6 +1,8 @@
 #ifndef _RPI2B1P1_H
 #define _RPI2B1P1_H
 
+#include <stdint.h>
+
 /*
  * Mapping from board pin numbers to GPIO numbers
  * https://pinout.xyz
@@ -35,5 +37,7 @@
 #define RPI_GPIO_40 21
 
 #define ACTLED_GPIO_PIN 47
+
+void debug_blink(uint8_t n);
 
 #endif // _RPI2B1P1_H
