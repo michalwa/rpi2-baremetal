@@ -41,10 +41,28 @@ typedef enum {
 void gpio_fsel(uint8_t pin, gpio_fsel_t mode);
 void gpio_write(uint8_t pin, gpio_state_t state);
 
-void spi_cdiv(uint16_t div);
-void spi_tx_begin(void);
-void spi_tx_end(void);
-void spi_tx_write(uint8_t byte);
+typedef enum {
+    SPI_CS_TXD      = (1 << 18),
+    SPI_CS_RXD      = (1 << 17),
+    SPI_CS_DONE     = (1 << 16),
+    SPI_CS_REN      = (1 << 12),
+    SPI_CS_TA       = (1 << 7),
+    SPI_CS_CLEAR_RX = (1 << 5),
+    SPI_CS_CLEAR_TX = (1 << 4),
+    SPI_CS_CPOL     = (1 << 3),
+    SPI_CS_CPHA     = (1 << 2),
+    SPI_MODE_0      = 0,
+    SPI_MODE_1      = SPI_CS_CPHA,
+    SPI_MODE_2      = SPI_CS_CPOL,
+    SPI_MODE_3      = (SPI_CS_CPOL | SPI_CS_CPHA),
+} spi_cs_t;
+
+void     spi_cdiv(uint16_t div);
+spi_cs_t spi_cs_read(void);
+void     spi_cs_write(spi_cs_t flags);
+void     spi_tx_begin(void);
+void     spi_tx_write(uint8_t byte);
+void     spi_tx_end(void);
 
 void sleep_ms(uint32_t ms);
 

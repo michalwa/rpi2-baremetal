@@ -3,8 +3,12 @@
 #include "bcm2836.h"
 
 /*
- * The display supposedly uses the ILI9486 controller. This is not
- * officially documented anywhere.
+ * Waveshare 3.5inch RPi LCD (C)
+ *
+ *   https://www.waveshare.com/wiki/3.5inch_RPi_LCD_(C)
+ *
+ * The display supposedly uses the ILI9486 controller. This is not officially
+ * documented anywhere.
  *
  * Datasheet:
  *   https://www.lcdwiki.com/res/MAR3501/datasheet_ILI9486.pdf
@@ -51,11 +55,10 @@ void ws35c_init(void) {
     gpio_fsel(WS35C_LCD_CS_PIN, GPIO_ALT0); // SPI0_CE0_N
     gpio_fsel(WS35C_SCLK_PIN, GPIO_ALT0);   // SPI0_SCLK
 
-    // The BCM2836 core clock runs at 250Mhz by default, we want at most 125Mhz
-    spi_cdiv(16); // TODO: try different values
-
-    // SPI control register should be safe to leave at default 0
-    // (CPOL = 0, CPHA = 0, etc.)
+    // The BCM2836 core clock runs at 250Mhz (see config.txt),
+    // we want at most 125Mhz
+    spi_cdiv(4);                            // TODO: try different values
+    spi_cs_write(SPI_MODE_0 & ~SPI_CS_REN); // clearing SPI_CS_REN is redundant but left for clarity
 
     command1(0xB0, 0x00); // interface mode control: it takes some flags, just clear them
     command(0x11);        // sleep OUT
