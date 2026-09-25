@@ -13,5 +13,5 @@ void debug_blink(uint8_t n) {
     }
 
     gpio_write(ACTLED_GPIO_PIN, GPIO_LOW);
-    sleep_ms(500);
+    sleep_ms(300);
 }

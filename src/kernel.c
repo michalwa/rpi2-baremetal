@@ -7,13 +7,13 @@
 void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags) {
     (void)r0, (void)r1, (void)atags;
 
-    debug_blink(3);
+    debug_blink(1);
 
     ws35c_init();
 
-    debug_blink(4);
+    debug_blink(1);
 
     ws35c_fill(9, 49, 9, 49, rgb565(0x13, 0x03, 0x0C));
 
-    for (;;) debug_blink(5);
+    for (;;) debug_blink(3);
 }
