@@ -9,7 +9,7 @@
 #define MAX7219_MOSI_PIN RPI_GPIO_19
 #define MAX7219_SCLK_PIN RPI_GPIO_23
 
-extern uint8_t max7219_digits[38][8];
+extern const uint8_t max7219_digits[38][8];
 
 void max7219_init(void);
 /*
