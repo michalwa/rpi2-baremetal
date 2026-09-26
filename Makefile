@@ -37,7 +37,11 @@ ASMFLAGS = \
 LDFLAGS = \
 	-ffreestanding \
 	-O2 \
-	-nostdlib \
+	-nostartfiles \
+	--specs=nosys.specs \
+	--specs=nano.specs \
+	-lc \
+	-lnosys \
 	-lgcc
 
 all: boot $(KERNEL_BIN)

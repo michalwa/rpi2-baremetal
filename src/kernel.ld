@@ -13,4 +13,7 @@ SECTIONS {
     __bss_start = .;
     .bss : { *(.bss) }
     __bss_end = .;
+
+    . = ALIGN(0x4);
+    end = .;
 }
