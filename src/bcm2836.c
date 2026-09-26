@@ -39,37 +39,37 @@ inline void spi_cdiv(uint16_t div) {
     *(reg32_t *)(SPI_BASE + 0x8) = div;
 }
 
-inline spi_cs_t spi_cs_read(void) {
+inline spi_ctl_t spi_ctl_read(void) {
     return *(reg32_t *)SPI_BASE;
 }
 
-inline void spi_cs_write(spi_cs_t flags) {
+inline void spi_ctl_write(spi_ctl_t flags) {
     *(reg32_t *)SPI_BASE = flags;
 }
 
 inline void spi_tx_begin(void) {
-    *(reg32_t *)SPI_BASE |= SPI_CS_TA;
+    *(reg32_t *)SPI_BASE |= SPI_TA;
 }
 
 // https://github.com/torvalds/linux/blob/165768bb70265b5c38cf0b73fafd75be235f8b14/drivers/spi/spi-bcm2835.c#L997-L1050
 void spi_tx_write(uint8_t byte) {
-    while (!(spi_cs_read() & SPI_CS_TXD));
+    while (!(spi_ctl_read() & SPI_TXD));
     *(reg32_t *)(SPI_BASE + 0x4) = byte;
 
     // Read back bytes to free up the FIFO in case slaves respond
     uint32_t rx;
-    while (spi_cs_read() & SPI_CS_RXD) rx = *(reg32_t *)(SPI_BASE + 0x4);
+    while (spi_ctl_read() & SPI_RXD) rx = *(reg32_t *)(SPI_BASE + 0x4);
     (void)rx;
 }
 
 void spi_tx_end(void) {
-    while (!(spi_cs_read() & SPI_CS_DONE));
+    while (!(spi_ctl_read() & SPI_DONE));
 
     // https://github.com/torvalds/linux/blob/165768bb70265b5c38cf0b73fafd75be235f8b14/drivers/spi/spi-bcm2835.c#L358-L366
-    spi_cs_t cs = spi_cs_read();
-    cs &= ~SPI_CS_TA;
-    cs |= SPI_CS_DONE | SPI_CS_CLEAR_RX | SPI_CS_CLEAR_TX;
-    spi_cs_write(cs);
+    spi_ctl_t cs = spi_ctl_read();
+    cs &= ~SPI_TA;
+    cs |= SPI_DONE | SPI_CLEAR_RX | SPI_CLEAR_TX;
+    spi_ctl_write(cs);
 }
 
 static inline uint64_t systime(void) {
