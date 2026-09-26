@@ -30,7 +30,7 @@ static inline void data_begin(void) {
     spi_tx_begin();
 }
 
-static inline void data_end(void) {
+void data_end(void) {
     spi_tx_end();
 
     gpio_write(WS35C_LCD_CS_PIN, GPIO_HIGH);
@@ -69,13 +69,13 @@ void ws35c_init(void) {
 
     // The BCM2836 core clock runs at 250Mhz (see config.txt),
     // we want at most 125Mhz
-    spi_cdiv(2);
+    spi_cdiv(4);
     spi_ctl_write(SPI_MODE_0 | SPI_CS_NONE);
 
     command(0x11); // sleep OUT
     sleep_ms(120); // wait while the controller does a self-diagnostic check
 
-    command1(0x36, 0x48); // memory access control: MX (orientation), BGR
+    command1(0x36, 0x48); // memory access control: MY+MX (orientation), BGR
     // interface pixel format: 18 bits per pixel
     // Despite 16 bits per pixel (0x55) being a valid config, ILI9486 allegedly
     // does not support it when writing over SPI
@@ -139,44 +139,60 @@ void ws35c_init(void) {
     sleep_ms(50);
 }
 
-void ws35c_fill(
-    uint16_t col_start, uint16_t col_end, uint16_t page_start, uint16_t page_end, rgb_t rgb
-) {
+void ws35c_rect_begin(rect_t rect) {
     command(0x2A); // Column Address Set
     data_begin();
     {
-        spi_tx_write16(col_start >> 8);
-        spi_tx_write16(col_start & 0xFF);
-        spi_tx_write16(col_end >> 8);
-        spi_tx_write16(col_end & 0xFF);
+        spi_tx_write16(rect.col_start >> 8);
+        spi_tx_write16(rect.col_start & 0xFF);
+        spi_tx_write16(rect.col_end >> 8);
+        spi_tx_write16(rect.col_end & 0xFF);
     }
     data_end();
 
     command(0x2B); // Page Address Set
     data_begin();
     {
-        spi_tx_write16(page_start >> 8);
-        spi_tx_write16(page_start & 0xFF);
-        spi_tx_write16(page_end >> 8);
-        spi_tx_write16(page_end & 0xFF);
+        spi_tx_write16(rect.page_start >> 8);
+        spi_tx_write16(rect.page_start & 0xFF);
+        spi_tx_write16(rect.page_end >> 8);
+        spi_tx_write16(rect.page_end & 0xFF);
     }
     data_end();
-
-    uint32_t size = ((uint32_t)col_end - col_start + 1) * (page_end - page_start + 1);
 
     command(0x2C); // Memory Write
     data_begin();
-    {
-        for (uint32_t i = 0; i < size; i++) {
-            // Apparently the 6-bit components have to be shifted such that they
-            // occupy the 6 MSBs
-            // https://github.com/khiyamiftikhar/esp-lcd-ili9486/blob/7dcb034e9bd059ce8a34929762b6bdc361538c18/src/esp_ili9486_panel.c#L43-L53
-            spi_tx_write(rgb.r << 2);
-            spi_tx_write(rgb.g << 2);
-            spi_tx_write(rgb.b << 2);
-        }
-    }
+}
+
+inline void ws35c_rect_end(void) {
     data_end();
+}
+
+void ws35c_write(rgb_t rgb) {
+    // Apparently the 6-bit components have to be shifted such that they
+    // occupy the 6 MSBs
+    // https://github.com/khiyamiftikhar/esp-lcd-ili9486/blob/7dcb034e9bd059ce8a34929762b6bdc361538c18/src/esp_ili9486_panel.c#L43-L53
+    spi_tx_write(rgb.r << 2);
+    spi_tx_write(rgb.g << 2);
+    spi_tx_write(rgb.b << 2);
+}
+
+void ws35c_fill(rect_t rect, rgb_t rgb) {
+    uint32_t size =
+        ((uint32_t)rect.col_end - rect.col_start + 1) * (rect.page_end - rect.page_start + 1);
+
+    ws35c_rect_begin(rect);
+    for (uint32_t i = 0; i < size; i++) ws35c_write(rgb);
+    data_end();
+}
+
+inline rect_t xywh(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
+    return (rect_t){
+        .col_start  = x,
+        .col_end    = x + w - 1,
+        .page_start = y,
+        .page_end   = y + h - 1,
+    };
 }
 
 inline rgb_t rgb(uint8_t r, uint8_t g, uint8_t b) {
