@@ -1,6 +1,7 @@
 #ifndef _WS35C_H
 #define _WS35C_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 #include "rpi2b1p1.h"
@@ -37,7 +38,7 @@ typedef struct {
 void ws35c_init(void);
 void ws35c_rect_begin(rect_t rect);
 void ws35c_rect_end(void);
-void ws35c_write(rgb_t rgb);
+void ws35c_write(rgb_t rgb, size_t count);
 void ws35c_fill(rect_t rect, rgb_t rgb);
 
 rect_t xywh(uint16_t x, uint16_t y, uint16_t w, uint16_t h);

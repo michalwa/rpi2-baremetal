@@ -52,22 +52,21 @@ extern inline void spi_tx_begin(void) {
 }
 
 // https://github.com/torvalds/linux/blob/165768bb70265b5c38cf0b73fafd75be235f8b14/drivers/spi/spi-bcm2835.c#L997-L1050
-void spi_tx_write(uint8_t byte) {
-    while (!(spi_ctl_read() & SPI_TXD));
-    *(reg32_t *)(SPI_BASE + 0x4) = byte;
+void spi_tx_write(const uint8_t *buf, size_t sz, size_t count) {
+    int cleared = 0;
 
-    // Clear RX FIFO in case slaves respond
-    spi_ctl_write(spi_ctl_read() | SPI_CLEAR_RX);
-}
-
-void spi_tx_write_all(const uint8_t *buf, size_t sz) {
-    for (size_t i = 0; i < sz; i++) {
+    for (size_t i = 0; i < count * sz; i++) {
         while (!(spi_ctl_read() & SPI_TXD));
-        *(reg32_t *)(SPI_BASE + 0x4) = buf[i];
+        *(reg32_t *)(SPI_BASE + 0x4) = buf[i % sz];
+
+        // Clear RX FIFO in case slaves respond, interval is arbitrary
+        if (i % 32 == 0) {
+            spi_ctl_write(spi_ctl_read() | SPI_CLEAR_RX);
+            cleared = 1;
+        }
     }
 
-    // Clear RX FIFO in case slaves respond
-    spi_ctl_write(spi_ctl_read() | SPI_CLEAR_RX);
+    if (!cleared) spi_ctl_write(spi_ctl_read() | SPI_CLEAR_RX);
 }
 
 void spi_tx_end(void) {

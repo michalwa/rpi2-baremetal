@@ -22,7 +22,7 @@
 // board must be preceded by a 0 byte, except RGB666 data bytes for some reason
 static inline void spi_tx_write16(uint8_t b) {
     uint8_t buf[] = { 0, b };
-    spi_tx_write_all(buf, sizeof(buf));
+    spi_tx_write(buf, sizeof(buf), 1);
 }
 
 static inline void data_begin(void) {
@@ -168,8 +168,8 @@ extern inline void ws35c_rect_end(void) {
     data_end();
 }
 
-extern inline void ws35c_write(rgb_t rgb) {
-    spi_tx_write_all((const uint8_t *)&rgb, 3);
+extern inline void ws35c_write(rgb_t rgb, size_t count) {
+    spi_tx_write((const uint8_t *)&rgb, 3, count);
 }
 
 void ws35c_fill(rect_t rect, rgb_t rgb) {
@@ -177,8 +177,8 @@ void ws35c_fill(rect_t rect, rgb_t rgb) {
         ((uint32_t)rect.col_end - rect.col_start + 1) * (rect.page_end - rect.page_start + 1);
 
     ws35c_rect_begin(rect);
-    for (uint32_t i = 0; i < size; i++) ws35c_write(rgb);
-    data_end();
+    ws35c_write(rgb, size);
+    ws35c_rect_end();
 }
 
 extern inline rect_t xywh(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {

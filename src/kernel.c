@@ -37,7 +37,7 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags) {
 
         for (uint8_t row = 0; row < font->glyph_height; row++)
             for (uint8_t col = 0; col < font->glyph_width; col++)
-                ws35c_write(psf2_pixel(font, glyph, col, row) ? RGB_WHITE : RGB_BLACK);
+                ws35c_write(psf2_pixel(font, glyph, col, row) ? RGB_WHITE : RGB_BLACK, 1);
 
         ws35c_rect_end();
     }
