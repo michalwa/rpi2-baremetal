@@ -1,5 +1,5 @@
-#ifndef _RPI2B1P1_H
-#define _RPI2B1P1_H
+#ifndef RPI2B1P1_H
+#define RPI2B1P1_H
 
 #include <stdint.h>
 
@@ -40,4 +40,4 @@
 
 void debug_blink(uint8_t n);
 
-#endif // _RPI2B1P1_H
+#endif // RPI2B1P1_H

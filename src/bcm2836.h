@@ -1,5 +1,5 @@
-#ifndef _BCM2836_H
-#define _BCM2836_H
+#ifndef BCM2836_H
+#define BCM2836_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -72,4 +72,4 @@ void      spi_tx_end(void);
 
 void sleep_ms(uint32_t ms);
 
-#endif // _BCM2836_H
+#endif // BCM2836_H

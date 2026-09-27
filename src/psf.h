@@ -1,5 +1,5 @@
-#ifndef _PSF_H
-#define _PSF_H
+#ifndef PSF_H
+#define PSF_H
 
 #include <stdint.h>
 
@@ -35,4 +35,4 @@ psf2_font_t  psf2_init(const void *start);
 psf2_glyph_t psf2_glyph(psf2_font_t font, uint32_t i);
 int          psf2_pixel(psf2_font_t font, psf2_glyph_t glyph, uint8_t col, uint8_t row);
 
-#endif // _PSF_H
+#endif // PSF_H

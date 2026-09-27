@@ -1,5 +1,5 @@
-#ifndef _WS35C_H
-#define _WS35C_H
+#ifndef WS35C_H
+#define WS35C_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -44,4 +44,4 @@ void ws35c_fill(rect_t rect, rgb_t rgb);
 rect_t xywh(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
 rgb_t  rgb(uint8_t r, uint8_t g, uint8_t b);
 
-#endif // _WS35C_H
+#endif // WS35C_H
