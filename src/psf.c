@@ -1,6 +1,6 @@
 #include "psf.h"
 
-inline psf2_font_t psf2_init(const void *start) {
+extern inline psf2_font_t psf2_init(const void *start) {
     psf2_font_t font = (psf2_font_t)start;
 
     if (font->magic != PSF2_MAGIC)
@@ -9,7 +9,7 @@ inline psf2_font_t psf2_init(const void *start) {
     return font;
 }
 
-inline psf2_glyph_t psf2_glyph(psf2_font_t font, uint32_t i) {
+extern inline psf2_glyph_t psf2_glyph(psf2_font_t font, uint32_t i) {
     return (psf2_glyph_t)font + font->header_size + i * font->glyph_size;
 }
 

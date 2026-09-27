@@ -21,8 +21,8 @@
 // Because of some shift register shenanigans, every single byte sent to the
 // board must be preceded by a 0 byte, except RGB666 data bytes for some reason
 static inline void spi_tx_write16(uint8_t b) {
-    spi_tx_write(0);
-    spi_tx_write(b);
+    uint8_t buf[] = { 0, b };
+    spi_tx_write_all(buf, sizeof(buf));
 }
 
 static inline void data_begin(void) {
@@ -164,17 +164,12 @@ void ws35c_rect_begin(rect_t rect) {
     data_begin();
 }
 
-inline void ws35c_rect_end(void) {
+extern inline void ws35c_rect_end(void) {
     data_end();
 }
 
-void ws35c_write(rgb_t rgb) {
-    // Apparently the 6-bit components have to be shifted such that they
-    // occupy the 6 MSBs
-    // https://github.com/khiyamiftikhar/esp-lcd-ili9486/blob/7dcb034e9bd059ce8a34929762b6bdc361538c18/src/esp_ili9486_panel.c#L43-L53
-    spi_tx_write(rgb.r << 2);
-    spi_tx_write(rgb.g << 2);
-    spi_tx_write(rgb.b << 2);
+extern inline void ws35c_write(rgb_t rgb) {
+    spi_tx_write_all((const uint8_t *)&rgb, 3);
 }
 
 void ws35c_fill(rect_t rect, rgb_t rgb) {
@@ -186,7 +181,7 @@ void ws35c_fill(rect_t rect, rgb_t rgb) {
     data_end();
 }
 
-inline rect_t xywh(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
+extern inline rect_t xywh(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
     return (rect_t){
         .col_start  = x,
         .col_end    = x + w - 1,
@@ -195,6 +190,9 @@ inline rect_t xywh(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
     };
 }
 
-inline rgb_t rgb(uint8_t r, uint8_t g, uint8_t b) {
-    return (rgb_t){ r, g, b };
+extern inline rgb_t rgb(uint8_t r, uint8_t g, uint8_t b) {
+    // Apparently the 6-bit components have to be shifted such that they
+    // occupy the 6 MSBs
+    // https://github.com/khiyamiftikhar/esp-lcd-ili9486/blob/7dcb034e9bd059ce8a34929762b6bdc361538c18/src/esp_ili9486_panel.c#L43-L53
+    return (rgb_t){ r << 2, g << 2, b << 2 };
 }

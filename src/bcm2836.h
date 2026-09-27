@@ -1,6 +1,7 @@
 #ifndef _BCM2836_H
 #define _BCM2836_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 /*
@@ -67,6 +68,7 @@ spi_ctl_t spi_ctl_read(void);
 void      spi_ctl_write(spi_ctl_t flags);
 void      spi_tx_begin(void);
 void      spi_tx_write(uint8_t byte);
+void      spi_tx_write_all(const uint8_t *buf, size_t sz);
 void      spi_tx_end(void);
 
 void sleep_ms(uint32_t ms);

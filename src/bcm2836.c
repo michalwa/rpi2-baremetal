@@ -35,19 +35,19 @@ void gpio_write(uint8_t pin, gpio_state_t state) {
     *(state ? gpset(pin) : gpclr(pin)) = 1 << gpsetclr_bit(pin);
 }
 
-inline void spi_cdiv(uint16_t div) {
+extern inline void spi_cdiv(uint16_t div) {
     *(reg32_t *)(SPI_BASE + 0x8) = div;
 }
 
-inline spi_ctl_t spi_ctl_read(void) {
+extern inline spi_ctl_t spi_ctl_read(void) {
     return *(reg32_t *)SPI_BASE;
 }
 
-inline void spi_ctl_write(spi_ctl_t flags) {
+extern inline void spi_ctl_write(spi_ctl_t flags) {
     *(reg32_t *)SPI_BASE = flags;
 }
 
-inline void spi_tx_begin(void) {
+extern inline void spi_tx_begin(void) {
     *(reg32_t *)SPI_BASE |= SPI_TA;
 }
 
@@ -56,10 +56,18 @@ void spi_tx_write(uint8_t byte) {
     while (!(spi_ctl_read() & SPI_TXD));
     *(reg32_t *)(SPI_BASE + 0x4) = byte;
 
-    // Read back bytes to free up the FIFO in case slaves respond
-    uint32_t rx;
-    while (spi_ctl_read() & SPI_RXD) rx = *(reg32_t *)(SPI_BASE + 0x4);
-    (void)rx;
+    // Clear RX FIFO in case slaves respond
+    spi_ctl_write(spi_ctl_read() | SPI_CLEAR_RX);
+}
+
+void spi_tx_write_all(const uint8_t *buf, size_t sz) {
+    for (size_t i = 0; i < sz; i++) {
+        while (!(spi_ctl_read() & SPI_TXD));
+        *(reg32_t *)(SPI_BASE + 0x4) = buf[i];
+    }
+
+    // Clear RX FIFO in case slaves respond
+    spi_ctl_write(spi_ctl_read() | SPI_CLEAR_RX);
 }
 
 void spi_tx_end(void) {
