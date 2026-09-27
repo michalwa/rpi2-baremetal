@@ -17,10 +17,13 @@
  */
 
 #define MMIO_BASE    0x3F000000
-#define GPIO_BASE    (MMIO_BASE + 0x200000)
 #define SPI_BASE     (MMIO_BASE + 0x204000)
+#define GPIO_BASE    (MMIO_BASE + 0x200000)
+#define DMA_BASE     (MMIO_BASE + 0x7000)
 #define SYSTIME_BASE (MMIO_BASE + 0x3000)
 #define SYSTIME_TPS  1000000
+
+#define DMA_HEADER_SIZE 4
 
 typedef enum {
     GPIO_FSEL_CLEAR = 0x7,
@@ -48,6 +51,7 @@ typedef enum {
     SPI_DONE     = (1 << 16),
     SPI_REN      = (1 << 12),
     SPI_ADCS     = (1 << 11),
+    SPI_DMAEN    = (1 << 8),
     SPI_TA       = (1 << 7),
     SPI_CLEAR_RX = (1 << 5),
     SPI_CLEAR_TX = (1 << 4),
@@ -66,10 +70,15 @@ typedef enum {
 void      spi_cdiv(uint16_t div);
 spi_ctl_t spi_ctl_read(void);
 void      spi_ctl_write(spi_ctl_t flags);
-void      spi_tx_begin(void);
-void      spi_tx_write(uint8_t byte);
-void      spi_tx_write_all(const uint8_t *buf, size_t sz);
-void      spi_tx_end(void);
+void      spi_poll_begin(void);
+void      spi_poll_write(const uint8_t *buf, size_t sz);
+void      spi_poll_end(void);
+
+/*
+ * NOTE: `buf` must be padded with 4 leading bytes to be used as the DMA
+ * transfer header. `sz` should therefore equal `4 + sizeof(buf)`.
+ */
+void spi_dma_write(const uint8_t *buf, size_t sz);
 
 void sleep_ms(uint32_t ms);
 

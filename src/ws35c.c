@@ -22,16 +22,16 @@
 // board must be preceded by a 0 byte, except RGB666 data bytes for some reason
 static inline void spi_tx_write16(uint8_t b) {
     uint8_t buf[] = { 0, b };
-    spi_tx_write_all(buf, sizeof(buf));
+    spi_poll_write(buf, sizeof(buf));
 }
 
 static inline void data_begin(void) {
     gpio_write(WS35C_LCD_RS_PIN, GPIO_HIGH);
-    spi_tx_begin();
+    spi_poll_begin();
 }
 
 void data_end(void) {
-    spi_tx_end();
+    spi_poll_end();
 
     gpio_write(WS35C_LCD_CS_PIN, GPIO_HIGH);
 }
@@ -40,9 +40,9 @@ static inline void command(uint8_t cmd) {
     gpio_write(WS35C_LCD_RS_PIN, GPIO_LOW);
     gpio_write(WS35C_LCD_CS_PIN, GPIO_LOW);
 
-    spi_tx_begin();
+    spi_poll_begin();
     spi_tx_write16(cmd);
-    spi_tx_end();
+    spi_poll_end();
 }
 
 static inline void command1(uint8_t cmd, uint8_t arg) {
@@ -161,15 +161,21 @@ void ws35c_rect_begin(rect_t rect) {
     data_end();
 
     command(0x2C); // Memory Write
-    data_begin();
+    // data_begin();
 }
 
 extern inline void ws35c_rect_end(void) {
-    data_end();
+    // data_end();
 }
 
 extern inline void ws35c_write(rgb_t rgb) {
-    spi_tx_write_all((const uint8_t *)&rgb, 3);
+    spi_poll_write((const uint8_t *)&rgb, 3);
+}
+
+extern inline void ws35c_write_all(const uint8_t *buf, size_t sz) {
+    // TODO: Write over DMA
+    // spi_poll_write((const uint8_t *)buf, sz * sizeof(*buf));
+    spi_dma_write(buf, sz);
 }
 
 void ws35c_fill(rect_t rect, rgb_t rgb) {
@@ -195,4 +201,10 @@ extern inline rgb_t rgb(uint8_t r, uint8_t g, uint8_t b) {
     // occupy the 6 MSBs
     // https://github.com/khiyamiftikhar/esp-lcd-ili9486/blob/7dcb034e9bd059ce8a34929762b6bdc361538c18/src/esp_ili9486_panel.c#L43-L53
     return (rgb_t){ r << 2, g << 2, b << 2 };
+}
+
+void fb_fill(rgb_t *fb, size_t sz, rgb_t rgb) {
+    for (size_t i = 0; i < sz; i++) {
+        fb[i] = rgb;
+    }
 }

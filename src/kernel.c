@@ -1,12 +1,16 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 
+#include "bcm2836.h"
 #include "psf.h"
 #include "rpi2b1p1.h"
 #include "ws35c.h"
 
 extern const uint8_t _binary_res_cozette_psf_start[];
+
+uint8_t fb[DMA_HEADER_SIZE + (WS35C_HEIGHT * WS35C_WIDTH * sizeof(rgb_t))];
 
 void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags) {
     (void)r0, (void)r1, (void)atags;
@@ -14,7 +18,10 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags) {
     debug_blink(1);
 
     ws35c_init();
-    ws35c_fill(xywh(0, 0, WS35C_WIDTH, WS35C_HEIGHT), RGB_BLACK);
+    // ws35c_fill(xywh(0, 0, WS35C_WIDTH, WS35C_HEIGHT), RGB_BLACK);
+    ws35c_rect_begin(xywh(0, 0, WS35C_WIDTH, WS35C_HEIGHT));
+    ws35c_write_all(fb, WS35C_HEIGHT * WS35C_WIDTH);
+    ws35c_rect_end();
 
     psf2_font_t font = psf2_init(_binary_res_cozette_psf_start);
 

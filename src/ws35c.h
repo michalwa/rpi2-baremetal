@@ -1,6 +1,7 @@
 #ifndef _WS35C_H
 #define _WS35C_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 #include "rpi2b1p1.h"
@@ -38,9 +39,16 @@ void ws35c_init(void);
 void ws35c_rect_begin(rect_t rect);
 void ws35c_rect_end(void);
 void ws35c_write(rgb_t rgb);
+/*
+ * NOTE: `buf` must be padded with 4 leading bytes to be used as the DMA
+ * transfer header. `sz` should therefore equal `4 + sizeof(buf)`.
+ */
+void ws35c_write_all(const uint8_t *buf, size_t sz);
 void ws35c_fill(rect_t rect, rgb_t rgb);
 
 rect_t xywh(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
 rgb_t  rgb(uint8_t r, uint8_t g, uint8_t b);
+
+void fb_fill(rgb_t *fb, size_t sz, rgb_t rgb);
 
 #endif // _WS35C_H

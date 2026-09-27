@@ -1,5 +1,7 @@
 #include "bcm2836.h"
 
+#include <stdint.h>
+
 // 32-bit MMIO register
 typedef volatile uint32_t reg32_t;
 
@@ -47,30 +49,29 @@ extern inline void spi_ctl_write(spi_ctl_t flags) {
     *(reg32_t *)SPI_BASE = flags;
 }
 
-extern inline void spi_tx_begin(void) {
+extern inline void spi_poll_begin(void) {
     *(reg32_t *)SPI_BASE |= SPI_TA;
 }
 
 // https://github.com/torvalds/linux/blob/165768bb70265b5c38cf0b73fafd75be235f8b14/drivers/spi/spi-bcm2835.c#L997-L1050
-void spi_tx_write(uint8_t byte) {
-    while (!(spi_ctl_read() & SPI_TXD));
-    *(reg32_t *)(SPI_BASE + 0x4) = byte;
+void spi_poll_write(const uint8_t *buf, size_t sz) {
+    int cleared = 0;
 
-    // Clear RX FIFO in case slaves respond
-    spi_ctl_write(spi_ctl_read() | SPI_CLEAR_RX);
-}
-
-void spi_tx_write_all(const uint8_t *buf, size_t sz) {
     for (size_t i = 0; i < sz; i++) {
         while (!(spi_ctl_read() & SPI_TXD));
         *(reg32_t *)(SPI_BASE + 0x4) = buf[i];
+
+        // Clear RX FIFO in case slaves respond, 16 is arbitrary
+        if (i % 16 == 0) {
+            spi_ctl_write(spi_ctl_read() | SPI_CLEAR_RX);
+            cleared = 1;
+        }
     }
 
-    // Clear RX FIFO in case slaves respond
-    spi_ctl_write(spi_ctl_read() | SPI_CLEAR_RX);
+    if (!cleared) spi_ctl_write(spi_ctl_read() | SPI_CLEAR_RX);
 }
 
-void spi_tx_end(void) {
+void spi_poll_end(void) {
     while (!(spi_ctl_read() & SPI_DONE));
 
     // https://github.com/torvalds/linux/blob/165768bb70265b5c38cf0b73fafd75be235f8b14/drivers/spi/spi-bcm2835.c#L358-L366
@@ -78,6 +79,54 @@ void spi_tx_end(void) {
     cs &= ~SPI_TA;
     cs |= SPI_DONE | SPI_CLEAR_RX | SPI_CLEAR_TX;
     spi_ctl_write(cs);
+}
+
+typedef enum {
+    DMA_SRC_IGNORE  = (1 << 11),
+    DMA_SRC_DREQ    = (1 << 10),
+    DMA_SRC_INC     = (1 << 8),
+    DMA_DEST_IGNORE = (1 << 7),
+    DMA_DEST_DREQ   = (1 << 6),
+    DMA_INTEN       = 1,
+} dma_ti_t;
+
+#define DMA_PER_MAP(dreq) ((dreq & 0x1F) << 16)
+
+#define DMA_ACTIVE  1
+#define DREQ_SPI_TX 6
+
+typedef struct {
+    uint32_t tx_info; // dma_ti_t
+    uint32_t src_addr;
+    uint32_t dst_addr;
+    uint32_t tx_len;
+    uint32_t stride;
+    uint32_t next_addr;
+    uint32_t _padding[2];
+} __attribute__((__aligned__(32))) dma_ctl_t;
+
+static inline reg32_t *dma_channel(uint8_t channel) {
+    // NOTE: Channel 15 is not stored contiguously
+    return (reg32_t *)(DMA_BASE + channel * 0x100);
+}
+
+void spi_dma_write(const uint8_t *buf, size_t sz) {
+    *(uint32_t *)buf = (sz << 16) | SPI_TA;
+
+    spi_ctl_write(spi_ctl_read() | SPI_DMAEN | SPI_ADCS);
+
+    volatile dma_ctl_t tx_ctl = {
+        .tx_info  = DMA_PER_MAP(DREQ_SPI_TX) | DMA_DEST_DREQ | DMA_SRC_INC,
+        .tx_len   = sz,
+        .src_addr = (uintptr_t)buf,
+        .dst_addr = SPI_BASE + 0x4,
+    };
+
+    reg32_t *reg = dma_channel(0);
+    reg[1]       = (uintptr_t)&tx_ctl;
+    reg[0]       = DMA_ACTIVE;
+
+    while (reg[0] & DMA_ACTIVE);
 }
 
 static inline uint64_t systime(void) {
