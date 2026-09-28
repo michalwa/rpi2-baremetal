@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "bcm2836.h"
 #include "psf.h"
 #include "rpi2b1p1.h"
 #include "ws35c.h"
@@ -12,6 +13,9 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags) {
     (void)r0, (void)r1, (void)atags;
 
     debug_blink(1);
+
+    uart0_init(115200);
+    uart0_puts("hello uart\n");
 
     ws35c_init();
     ws35c_fill(xywh(0, 0, WS35C_WIDTH, WS35C_HEIGHT), RGB_BLACK);
@@ -42,5 +46,5 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags) {
         ws35c_rect_end();
     }
 
-    for (;;) debug_blink(1);
+    for (;;) debug_blink(3);
 }

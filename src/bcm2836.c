@@ -86,6 +86,37 @@ static inline uint64_t systime(void) {
     return ((uint64_t)hi << 32) | lo;
 }
 
+#define UART_DR   ((reg32_t *)UART_BASE)
+#define UART_FR   ((reg32_t *)(UART_BASE + 0x18))
+#define UART_IBRD ((reg32_t *)(UART_BASE + 0x24))
+#define UART_FBRD ((reg32_t *)(UART_BASE + 0x28))
+#define UART_LCRH ((reg32_t *)(UART_BASE + 0x2C))
+#define UART_CR   ((reg32_t *)(UART_BASE + 0x30))
+
+void uart0_init(uint32_t baud_rate) {
+    gpio_fsel(UART0_TX_PIN, GPIO_ALT_0); // TXD0
+    gpio_fsel(UART0_RX_PIN, GPIO_ALT_0); // RXD0
+
+    *UART_CR = 0; // &= ~(UART_RXE | UART_TXE)
+
+    uint32_t br16 = baud_rate * 16;
+    *UART_IBRD    = (FUARTCLK / br16) & 0xFFFF;
+    *UART_FBRD    = (((FUARTCLK % br16) << 6 + (br16 / 2)) / br16) & 0x3F;
+    *UART_LCRH    = UART_WLEN_8;
+    *UART_LCRH |= UART_FEN;
+
+    *UART_CR |= UART_UARTEN | UART_RXE | UART_TXE;
+}
+
+void uart0_putc(char c) {
+    while (*UART_FR & UART_FLAG_TXFF);
+    *UART_DR = c;
+}
+
+void uart0_puts(const char *s) {
+    while (*s) uart0_putc(*s++);
+}
+
 void sleep_ms(uint32_t ms) {
     uint64_t end = systime() + ms * SYSTIME_TPS / 1000;
 

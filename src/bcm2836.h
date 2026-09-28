@@ -21,6 +21,9 @@
 #define SPI_BASE     (MMIO_BASE + 0x204000)
 #define SYSTIME_BASE (MMIO_BASE + 0x3000)
 #define SYSTIME_TPS  1000000
+#define UART_BASE    (MMIO_BASE + 0x201000) // there is a missing trailing 0 in the datasheet!
+#define UART0_TX_PIN 14
+#define UART0_RX_PIN 15
 
 typedef enum {
     GPIO_FSEL_CLEAR = 0x7,
@@ -69,6 +72,34 @@ void      spi_ctl_write(spi_ctl_t flags);
 void      spi_tx_begin(void);
 void      spi_tx_write(const uint8_t *buf, size_t sz, size_t count);
 void      spi_tx_end(void);
+
+typedef enum {
+    UART_RXE    = (1 << 9),
+    UART_TXE    = (1 << 8),
+    UART_UARTEN = (1 << 0),
+} uart_ctl_t;
+
+typedef enum {
+    UART_WLEN_8 = (3 << 5),
+    UART_WLEN_7 = (2 << 5),
+    UART_WLEN_6 = (1 << 5),
+    UART_WLEN_5 = (0 << 5),
+} uart_wlen_t;
+
+#define UART_FEN (1 << 4)
+
+typedef enum {
+    UART_FLAG_TXFF = (1 << 5),
+    UART_FLAG_RXFE = (1 << 4),
+} uart_flags_t;
+
+// Unable to find any actual source of this information
+// https://github.com/raspberrypi/firmware/issues/643
+#define FUARTCLK 48000000
+
+void uart0_init(uint32_t baud_rate);
+void uart0_putc(char c);
+void uart0_puts(const char *s);
 
 void sleep_ms(uint32_t ms);
 
